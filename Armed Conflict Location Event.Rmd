@@ -33,11 +33,13 @@ install.packages("broom", repos = "https://cran.rstudio.com/")
 library(broom)
 library(arm)
 library(readr)
+library(readxl)
 ```
 
 ```{r data, include=FALSE, echo=FALSE}
 ACLED <- read_csv("~/Armed-Conflict-Location-Event-Data/ACLED-Version-7-All-Africa-1997-2016_csv_dyadic-file.csv")
-View(ACLED)
+HDI <- read_csv("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/Human Development Index (HDI).csv")
+democracy <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Polity IV/p4v2016.xls")
 ```
 
 
