@@ -1,0 +1,17 @@
+Final project – 
+about 8 page document written in R Markdown
+Your goal is to apply your data science skills to process a large dataset and analyze it using your own ideas. 
+You can select a dataset from a number of interesting datasets (e.g. the Armed Conflict Location & Event Data) or suggest your own. 
+Specifically, you will have to:
+
+1.	Prepare your data set for analysis (25%)
+  o	Load the data and perform the necessary data cleaning and manipulation steps
+  
+2.	Perform exploratory data analysis and visualize interesting descriptive facts about your data (25%)
+
+3.	Develop and specify ideas for analyzing your data and run the appropriate statistical model (25%) 
+  o	e.g. regression analysis, machine learning, etc.
+  
+4.	Present and discuss your results (25%)
+  o	Appropriate graphical presentations of results (watch out for the quality of graphs)
+  o	BONUS: Create an interactive interface to your data (e.g. shiny, plotly, etc.) 
