@@ -30,9 +30,11 @@ install.packages("repmis", repos = "https://cran.rstudio.com/")
 library(repmis)
 library(data.table)
 library(magrittr)
+install.packages("stargazer")
 library(stargazer)
 install.packages("broom", repos = "https://cran.rstudio.com/")
 library(broom)
+install.packages("arm")
 library(arm)
 library(readr)
 library(readxl)
@@ -79,6 +81,14 @@ facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
                     
 ACLED %>% filter(Country == Congo (Democratic Republic of the)) %>%  rename(Congo (Democratic Republic of the)) Democratic Republic of Congo)
 democracy <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Polity IV/p4v2016.xls")
+
+GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
+GDP <- GDP %>% gather(key = year, value = score, -Country)
+names(GDP)[names(GDP)== "score"] <- "GDP"
+names(GDP)[names(GDP)== "Country"] <- "country"
+GDP <- apply(GDP,2,toupper)
+DATA <- merge(DATA, GDP, by=c("year","country"))
+
 democracy <- democracy[, -c(1:2)]
 DATA <- merge(ACLED, HDI, by=c("year","Country"))
 names(DATA)[names(DATA) == 'Country'] <- 'country'
@@ -88,7 +98,7 @@ DATA <- apply(DATA,2,toupper)
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
-#2010Country names
+#2010 Country names
 url <- "https://web.archive.org/web/20101008034936/http://internetworldstats.com/africa.htm"
 css <- "img+ font b"
 url_parsed <- read_html(url)
@@ -245,27 +255,10 @@ facebook$data <- NULL
 DATA <- merge(DATA, facebook, by=c("year","country"))
 ```
 
+table(ACLED$Country)
 
-
-```{r}
-DATA <- cbind(DATA, dummy(DATA$EVENT_TYPE)) #dummy creation
-
-HDI <- rename(HDI, c(Congo (Democratic Republic of the) = "Democratic Republic of Congo"))
-
-table <- table(ACLED$Country, ACLED$count)
-table1 <- table(DATA$country, DATA$count)
-View(table1)
-```
-
-
-
-
-
-
-
-
-
-
+facebook$country <- table(country) # A will be rows, B will be columns
+mytable
 
 
 
