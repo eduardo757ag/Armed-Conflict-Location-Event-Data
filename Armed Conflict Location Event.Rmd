@@ -5,8 +5,6 @@ date: "11/24/2017"
 output: pdf_document
 ---
 
-rm(list = ls())
-
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(width.cutoff=65), tidy=TRUE, fig.path='figs/', cache.path='cache/graphics-', 
