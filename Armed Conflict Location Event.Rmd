@@ -5,6 +5,8 @@ date: "11/24/2017"
 output: pdf_document
 ---
 
+rm(list = ls())
+
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(width.cutoff=65), tidy=TRUE, fig.path='figs/', cache.path='cache/graphics-', 
@@ -59,9 +61,25 @@ ACLED <- subset(ACLED, select = c("YEAR","EVENT_TYPE", "COUNTRY"))
 names(ACLED)[names(ACLED) == 'COUNTRY'] <- 'Country'
 names(ACLED)[names(ACLED) == 'YEAR'] <- 'year'
 ACLED <- ACLED %>% dplyr::group_by(year, Country, EVENT_TYPE) %>% dplyr::summarize(count = n())
+
 HDI <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/HDIversion2.xlsx")
 HDI <- HDI[, -1]
 HDI <- HDI %>% gather(key = year, value = score, -Country)
+#Renaming variables
+
+HDI$Country <- recode(HDI$Country,"Congo"="Republic of Congo")
+HDI$Country <- recode(HDI$Country,"Congo (Democratic Republic of the)"="Democratic Republic of Congo")
+HDI$Country <- recode(HDI$Country,"C�te d'Ivoire"="Ivory Coast")
+HDI$Country <- recode(HDI$Country,"Tanzania (United Republic of)"="Tanzania")
+
+facebook$country <- recode(facebook$country ,"CONGO"="Republic of Congo")
+facebook$country <- recode(facebook$country ,"CONGO, Democratic Republic of the, (ex-ZAIRE)"="Democratic Republic of Congo")
+facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivory Coast")
+facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
+
+
+                    
+ACLED %>% filter(Country == Congo (Democratic Republic of the)) %>%  rename(Congo (Democratic Republic of the)) Democratic Republic of Congo)
 democracy <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Polity IV/p4v2016.xls")
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
@@ -235,13 +253,7 @@ facebook$penetration <- str_replace_all(facebook$penetration, "%", "")
 facebook$data <- NULL
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
-DATA <- cbind(DATA, dummy(DATA$EVENT_TYPE))
 ```
-
-da
-
-
-table(facebook$country)
 
 table(ACLED$Country)
 
