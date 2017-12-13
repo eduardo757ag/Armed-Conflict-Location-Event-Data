@@ -14,6 +14,7 @@ opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(widt
 
 ```{r library, include=FALSE, echo=FALSE}
 library(shiny)
+install.packages("shinydashboard")
 library(shinydashboard)
 library(scales)
 library(foreign) #read foreign file objects
@@ -66,23 +67,15 @@ names(ACLED)[names(ACLED) == 'COUNTRY'] <- 'Country'
 names(ACLED)[names(ACLED) == 'YEAR'] <- 'year'
 ACLED <- ACLED %>% dplyr::group_by(year, Country, EVENT_TYPE) %>% dplyr::summarize(count = n())
 
-HDI <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/HDIversion2.xlsx")
-HDI <- HDI[, -1]
-HDI <- HDI %>% gather(key = year, value = score, -Country)
-#Renaming variables
-
-HDI$Country <- recode(HDI$Country,"Congo"="Republic of Congo")
-HDI$Country <- recode(HDI$Country,"Congo (Democratic Republic of the)"="Democratic Republic of Congo")
-HDI$Country <- recode(HDI$Country,"C�te d'Ivoire"="Ivory Coast")
-HDI$Country <- recode(HDI$Country,"Tanzania (United Republic of)"="Tanzania")
-
-
-
-DATA <- merge(ACLED, HDI, by=c("year","Country"))
-names(DATA)[names(DATA) == 'Country'] <- 'country'
-DATA <- subset(DATA, year >= 2010)
-DATA <- apply(DATA,2,toupper)
-
+cat_social_conflict <- c("Riots/Protests", "Violence against civilians")
+ACLED2 <- ACLED %>% 
+  mutate(dep1 = ifelse(EVENT_TYPE %in% cat_social_conflict, "social.conflict", "military.conflict" ))
+ACLED2 <- ACLED2 %>% 
+  ungroup() %>%
+  dplyr::group_by(Country, year, dep1) %>%
+  dplyr::summarise(dep2 = sum(count)) %>%
+  spread(dep1, dep2)
+names(ACLED2)[names(ACLED2)== "Country"] <- "country"
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
 View(GDP)
@@ -95,7 +88,19 @@ GDP <- GDP %>% gather(key = year, value = score, -Country)
 names(GDP)[names(GDP)== "score"] <- "GDP"
 names(GDP)[names(GDP)== "Country"] <- "country"
 GDP <- apply(GDP,2,toupper)
-DATA <- merge(DATA, GDP, by=c("year","country"))
+
+#ACLED2 <- ACLED2 %>% gather(key = year, value = score, -country)
+names(ACLED2)[names(ACLED2)== "score"] <- "GDP"
+names(ACLED2)[names(ACLED2)== "Country"] <- "country"
+ACLED2 <- apply(ACLED2,2,toupper)
+
+DATA <- merge(ACLED2, GDP, by=c("year","country"))
+names(DATA)[names(DATA) == 'Country'] <- 'country'
+
+#Dependent variables natural log 
+DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
+DATA$lnmilitary <- log(DATA$military.conflict)
+
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -259,7 +264,6 @@ facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivo
 facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
-table(DATA$country)
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -318,5 +322,5 @@ summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
 ```
 
-
+table(DATA$country, DATA$year)
 
