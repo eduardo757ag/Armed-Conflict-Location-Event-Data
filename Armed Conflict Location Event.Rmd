@@ -16,6 +16,7 @@ opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(widt
 
 ```{r library, include=FALSE, echo=FALSE}
 library(shiny)
+install.packages("shinydashboard")
 library(shinydashboard)
 library(scales)
 library(foreign) #read foreign file objects
@@ -64,23 +65,46 @@ library(plm)
 
 ACLED <- read_csv("~/Armed-Conflict-Location-Event-Data/ACLED-Version-7-All-Africa-1997-2016_csv_dyadic-file.csv")
 ACLED <- subset(ACLED, select = c("YEAR","EVENT_TYPE", "COUNTRY"))
-names(ACLED)[names(ACLED) == 'COUNTRY'] <- 'Country'
+names(ACLED)[names(ACLED) == 'COUNTRY'] <- "country"
 names(ACLED)[names(ACLED) == 'YEAR'] <- 'year'
-ACLED <- ACLED %>% dplyr::group_by(year, Country, EVENT_TYPE) %>% dplyr::summarize(count = n())
-names(ACLED)[names(ACLED)== "Country"] <- "country"
+ACLED <- ACLED %>% dplyr::group_by(year, country, EVENT_TYPE) %>% dplyr::summarize(count = n())
 ACLED <- apply(ACLED,2,toupper)
 
+cat_social_conflict <- c("RIOTS/PROTESTS", "VIOLENCE AGAINST CIVILIANS")
+
+ACLED <- ACLED %>% 
+  as.data.frame()
+ACLED2 <- ACLED %>% 
+  dplyr::mutate(dep1 = ifelse(EVENT_TYPE %in% cat_social_conflict, "CIVILIAN INVOLVED CONFLICT", "ARMED GROUP CONFLICT" ))
+
+ACLED2$count <- as.numeric(ACLED2$count)
+ACLED2 <- ACLED2 %>% 
+  ungroup() %>%
+  dplyr::group_by(country, year, dep1) %>%
+  dplyr::summarise(dep2 = sum(count)) %>%
+  spread(dep1, dep2)
+
+
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
+GDP <- apply(GDP,2,toupper)
+GDP <- as.data.frame(GDP)
 GDP$Country <- recode(GDP$Country,"CONGO"="Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democratic Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
 GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
-
 GDP <- GDP %>% gather(key = year, value = score, -Country)
 names(GDP)[names(GDP)== "score"] <- "GDP"
 names(GDP)[names(GDP)== "Country"] <- "country"
 GDP <- apply(GDP,2,toupper)
-DATA <- merge(ACLED, GDP, by=c("year","country"))
+
+DATA <- merge(ACLED2, GDP, by=c("year","country"))
+
+
+#Dependent variables natural log 
+DATA$`ARMED GROUP CONFLICT` <- DATA$`ARMED GROUP CONFLICT` %>% 
+  as.numeric()
+DATA$`CIVILIAN INVOLVED CONFLICT`<- DATA$`CIVILIAN INVOLVED CONFLICT` %>% 
+  as.numeric()
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -244,19 +268,6 @@ facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivo
 facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
-DATA$EVENT_TYPE <- as.character(DATA$EVENT_TYPE)
-DATA$EVENT_TYPE <- as.numeric(DATA$count)
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "STRATEGIC DEVELOPMENT"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-NO CHANGE OF TERRITORY"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-GOVERNMENT REGAINS TERRITORY"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-NON-STATE ACTOR OVERTAKES TERRITORY"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "NON-VIOLENT TRANSFER OF TERRITORY"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "REMOTE VIOLENCE"] <- "ARMED GROUP CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "VIOLENCE AGAINST CIVILIANS"] <- "CIVILIAN INVOLVED CONFLICT"
-DATA$EVENT_TYPE[DATA$EVENT_TYPE == "REMOTE VIOLENCE"] <- "CIVILIAN INVOLVED CONFLICT"
-
-DATA <- DATA %>% count(letter, number) %>% ungroup %>% group_by(letter) %>% mutate(sum.n = sum(n))
-
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -314,23 +325,5 @@ fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
 ```
-
-HDI <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/HDIversion2.xlsx")
-HDI <- HDI[, -1]
-HDI <- HDI %>% gather(key = year, value = score, -Country)
-#Renaming variables
-
-HDI$Country <- recode(HDI$Country,"Congo"="Republic of Congo")
-HDI$Country <- recode(HDI$Country,"Congo (Democratic Republic of the)"="Democratic Republic of Congo")
-HDI$Country <- recode(HDI$Country,"C�te d'Ivoire"="Ivory Coast")
-HDI$Country <- recode(HDI$Country,"Tanzania (United Republic of)"="Tanzania")
-
-
-
-DATA <- merge(ACLED, HDI, by=c("year","Country"))
-names(DATA)[names(DATA) == 'Country'] <- 'country'
-DATA <- subset(DATA, year >= 2010)
-DATA <- apply(DATA,2,toupper)
-
 
 
