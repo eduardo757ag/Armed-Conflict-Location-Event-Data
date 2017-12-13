@@ -5,8 +5,6 @@ date: "11/24/2017"
 output: pdf_document
 ---
 
-rm(list = ls())
-
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(width.cutoff=65), tidy=TRUE, fig.path='figs/', cache.path='cache/graphics-', 
@@ -15,6 +13,9 @@ opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(widt
 ```
 
 ```{r library, include=FALSE, echo=FALSE}
+library(shiny)
+library(shinydashboard)
+library(scales)
 library(foreign) #read foreign file objects
 install.packages("dplyr", repos = "https://cran.rstudio.com/")
 library(dplyr) #manipulate data
@@ -53,6 +54,8 @@ install.packages("ROAuth", repos = "https://cran.rstudio.com/")
 library(ROAuth)
 install.packages("stringi", repos = "https://cran.rstudio.com/")
 library(stringi)
+install.packages("plm", repos = "https://cran.rstudio.com/")
+library(plm)
 ```
 
 ```{r data, include=FALSE, echo=FALSE}
@@ -93,8 +96,6 @@ names(GDP)[names(GDP)== "score"] <- "GDP"
 names(GDP)[names(GDP)== "Country"] <- "country"
 GDP <- apply(GDP,2,toupper)
 DATA <- merge(DATA, GDP, by=c("year","country"))
-
-
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -258,12 +259,64 @@ facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivo
 facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
+table(DATA$country)
 ```
 
-table(ACLED$Country)
+```{r interactive plot, include=FALSE, echo=FALSE}
+ui <- fluidPage(
+  titlePanel("Armed Conflict Location Event"), # App title
+  
+  sidebarLayout(
+    sidebarPanel( # Sidebar panel for inputs
+      selectInput(inputId = "EVENT_TYPE", 
+                  label = "Event type",
+                  choices = unique(DATA$EVENT_TYPE),multiple=TRUE
+      )),
+    sidebarPanel( # Sidebar panel for inputs
+      selectInput(inputId = "country", 
+                  label = "Country",
+                  choices = unique(DATA$country),multiple=TRUE
+      )),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Armed Conflict Location Event", plotOutput("lineChart"))
+        # Output: Line Chart
+      )
+    )
+  ))
 
-facebook$country <- table(country) # A will be rows, B will be columns
-mytable
+
+server <- function(input, output) {
+  
+  # make line charts of events
+  output$lineChart <- renderPlot({
+    g<-ggplot(data=event(),aes(x=year, y=count))
+    g<-g+geom_line() + 
+      geom_point() +
+      scale_x_discrete(limits = year) + 
+      scale_y_continuous(labels=percent) +
+      ggtitle( paste("Armed Conflicts")) +
+      xlab("Year") + ylab("The number of reported cases")
+    g
+    
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
+
+
+##for in case lists
+c("STRATEGIC DEVELOPMENT","BATTLE-NO CHANGE OF TERRITORY","VIOLENCE AGAINST CIVILIANS","RIOTS/PROTESTS","BATTLE-GOVERNMENT REGAINS TERRITORY","REMOTE VIOLENCE","VIOLENCE AGAINST CIVILIANS","BATTLE-NON-STATE ACTOR OVERTAKES TERRITORY","NON-VIOLENT TRANSFER OF TERRITORY")
+
+c("ALGERIA","ANGOLA","BENIN","BOTSWANA","BURKINA FASO","BURUNDI","CENTRAL AFRICAN REPUBLIC","CHAD","DJIBOUTI", "EGYPT", "EQUATORIAL GUINEA", "ERITREA", "ETHIOPIA", "GABON", "GAMBIA", "GHANA", "GUINEA", "GUINEA-BISSAU", "KENYA", "LESOTHO", "LIBERIA", "LIBYA", "MADAGASCAR", "MALAWI", "MALI", "MAURITANIA", "MOROCCO", "MOZAMBIQUE", "NAMIBIA", "NIGER", "NIGERIA", "RWANDA", "SENEGAL", "SIERRA LEONE", "SOUTH AFRICA", "SOUTH SUDAN", "SUDAN", "SWAZILAND", "TOGO", "TUNISIA", "UGANDA", "ZAMBIA", "ZIMBABWE")
+```
+
+```{r fixed effect regression, include=FALSE, echo=FALSE}
+fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="within")
+summary(fixed)
+#see https://www.princeton.edu/~otorres/Panel101R.pdf
+```
 
 
 
