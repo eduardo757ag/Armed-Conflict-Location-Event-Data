@@ -5,6 +5,8 @@ date: "11/24/2017"
 output: pdf_document
 ---
 
+rm(list = ls())
+
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(width.cutoff=65), tidy=TRUE, fig.path='figs/', cache.path='cache/graphics-', 
@@ -65,27 +67,10 @@ ACLED <- subset(ACLED, select = c("YEAR","EVENT_TYPE", "COUNTRY"))
 names(ACLED)[names(ACLED) == 'COUNTRY'] <- 'Country'
 names(ACLED)[names(ACLED) == 'YEAR'] <- 'year'
 ACLED <- ACLED %>% dplyr::group_by(year, Country, EVENT_TYPE) %>% dplyr::summarize(count = n())
-
-HDI <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/HDIversion2.xlsx")
-HDI <- HDI[, -1]
-HDI <- HDI %>% gather(key = year, value = score, -Country)
-#Renaming variables
-
-HDI$Country <- recode(HDI$Country,"Congo"="Republic of Congo")
-HDI$Country <- recode(HDI$Country,"Congo (Democratic Republic of the)"="Democratic Republic of Congo")
-HDI$Country <- recode(HDI$Country,"C�te d'Ivoire"="Ivory Coast")
-HDI$Country <- recode(HDI$Country,"Tanzania (United Republic of)"="Tanzania")
-
-
-
-DATA <- merge(ACLED, HDI, by=c("year","Country"))
-names(DATA)[names(DATA) == 'Country'] <- 'country'
-DATA <- subset(DATA, year >= 2010)
-DATA <- apply(DATA,2,toupper)
-
+names(ACLED)[names(ACLED)== "Country"] <- "country"
+ACLED <- apply(ACLED,2,toupper)
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
-View(GDP)
 GDP$Country <- recode(GDP$Country,"CONGO"="Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democratic Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
@@ -95,7 +80,7 @@ GDP <- GDP %>% gather(key = year, value = score, -Country)
 names(GDP)[names(GDP)== "score"] <- "GDP"
 names(GDP)[names(GDP)== "Country"] <- "country"
 GDP <- apply(GDP,2,toupper)
-DATA <- merge(DATA, GDP, by=c("year","country"))
+DATA <- merge(ACLED, GDP, by=c("year","country"))
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -259,7 +244,19 @@ facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivo
 facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
-table(DATA$country)
+DATA$EVENT_TYPE <- as.character(DATA$EVENT_TYPE)
+DATA$EVENT_TYPE <- as.numeric(DATA$count)
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "STRATEGIC DEVELOPMENT"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-NO CHANGE OF TERRITORY"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-GOVERNMENT REGAINS TERRITORY"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "BATTLE-NON-STATE ACTOR OVERTAKES TERRITORY"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "NON-VIOLENT TRANSFER OF TERRITORY"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "REMOTE VIOLENCE"] <- "ARMED GROUP CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "VIOLENCE AGAINST CIVILIANS"] <- "CIVILIAN INVOLVED CONFLICT"
+DATA$EVENT_TYPE[DATA$EVENT_TYPE == "REMOTE VIOLENCE"] <- "CIVILIAN INVOLVED CONFLICT"
+
+DATA <- DATA %>% count(letter, number) %>% ungroup %>% group_by(letter) %>% mutate(sum.n = sum(n))
+
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -317,6 +314,23 @@ fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
 ```
+
+HDI <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/Human development index/HDIversion2.xlsx")
+HDI <- HDI[, -1]
+HDI <- HDI %>% gather(key = year, value = score, -Country)
+#Renaming variables
+
+HDI$Country <- recode(HDI$Country,"Congo"="Republic of Congo")
+HDI$Country <- recode(HDI$Country,"Congo (Democratic Republic of the)"="Democratic Republic of Congo")
+HDI$Country <- recode(HDI$Country,"C�te d'Ivoire"="Ivory Coast")
+HDI$Country <- recode(HDI$Country,"Tanzania (United Republic of)"="Tanzania")
+
+
+
+DATA <- merge(ACLED, HDI, by=c("year","Country"))
+names(DATA)[names(DATA) == 'Country'] <- 'country'
+DATA <- subset(DATA, year >= 2010)
+DATA <- apply(DATA,2,toupper)
 
 
 
