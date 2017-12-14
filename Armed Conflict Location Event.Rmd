@@ -339,5 +339,6 @@ c("ALGERIA","ANGOLA","BENIN","BOTSWANA","BURKINA FASO","BURUNDI","CENTRAL AFRICA
 fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="within")
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
+#
 ```
 
