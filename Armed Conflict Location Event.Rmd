@@ -94,6 +94,8 @@ GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democrat
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
 GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
 
+DATA$iso3c <- countrycode(DATA$country, 'country.name', 
+                        'iso3c', warn = T)
 #Dependent variables natural log 
 <<<<<<< HEAD
 DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
@@ -277,13 +279,6 @@ facebook <- data.frame(lapply(facebook, as.character), stringsAsFactors=FALSE)
 facebook$iso3c <- countrycode(facebook$country, 'country.name', 
                              'iso3c', warn = T)
 facebook<-data.frame(facebook)
-
-#facebook$country <- apply(facebook,2,toupper)
-#facebook$country <- swap(facebook$country ,"CONGO"="Republic of Congo")
-#facebook$country <- dplyr::recode(facebook$country ,"CONGO, Democratic Republic of the, #(ex-ZAIRE)"="Democratic Republic of Congo")
-#facebook$country  <- dplyr::recode(facebook$country ,"COTE D'IVOIRE (IVORY COAST)"="Ivory #Coast")
-#facebook$country <- dplyr::recode(facebook$country ,"TANZANIA"="Tanzania")
-#facebook$country <- apply(facebook,2,toupper)
 
 DATA <- merge(DATA, facebook, by=c("year","iso3c"))
 ```
