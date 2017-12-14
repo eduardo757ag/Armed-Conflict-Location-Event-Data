@@ -334,5 +334,15 @@ c("ALGERIA","ANGOLA","BENIN","BOTSWANA","BURKINA FASO","BURUNDI","CENTRAL AFRICA
 fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="within")
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
+
+ACLED$count <- as.numeric(ACLED$count)
+    g<-ggplot(data=ACLED,aes(x=year, y=count, group=country))
+    g<-g+geom_line() + 
+      geom_point() +
+      ggtitle(paste("Armed Conflicts")) +
+      xlab("Year") + ylab("The number of reported cases")
+    g
+    
+    max(ACLED$count, na.rm = TRUE)
 ```
 
