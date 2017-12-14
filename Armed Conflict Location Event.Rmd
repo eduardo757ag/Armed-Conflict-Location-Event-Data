@@ -61,6 +61,16 @@ install.packages("plm", repos = "https://cran.rstudio.com/")
 library(plm)
 install.packages("countrycode")
 library(countrycode)
+
+install.packages("foreign")
+library(foreign)
+install.packages("sandwich")
+library(sandwich)
+install.packages("lmtest")
+library(lmtest)
+
+install.packages("lfe")
+library(lfe)
 ```
 
 ```{r data, include=FALSE, echo=FALSE}
@@ -96,24 +106,13 @@ GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
 
 DATA$iso3c <- countrycode(DATA$country, 'country.name', 
                         'iso3c', warn = T)
+
 #Dependent variables natural log 
-<<<<<<< HEAD
 DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
 DATA$lnmilitary <- log1p(DATA$military.conflict)
 DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
 DATA$lnsocial <- log1p(DATA$social.conflict)
 
-#subscription
-DATA$subscription <- as.numeric(as.character(DATA$subscription))
-DATA$lnsubscription <- log1p(DATA$subscription)
-
-
-=======
-DATA$`ARMED GROUP CONFLICT` <- DATA$`ARMED GROUP CONFLICT` %>% 
-  as.numeric()
-DATA$`CIVILIAN INVOLVED CONFLICT`<- DATA$`CIVILIAN INVOLVED CONFLICT` %>% 
-  as.numeric()
->>>>>>> 8e57631f36d23b09171111a66a6169fa4a22e605
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -281,6 +280,9 @@ facebook$iso3c <- countrycode(facebook$country, 'country.name',
 facebook<-data.frame(facebook)
 
 DATA <- merge(DATA, facebook, by=c("year","iso3c"))
+#subscription
+DATA$subscription <- as.numeric(as.character(DATA$subscription))
+DATA$lnsubscription <- log1p(DATA$subscription)
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -334,7 +336,61 @@ c("ALGERIA","ANGOLA","BENIN","BOTSWANA","BURKINA FASO","BURUNDI","CENTRAL AFRICA
 ```
 
 ```{r fixed effect regression, include=FALSE, echo=FALSE}
-fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="within")
+
+install.packages("ggExtra")
+install.packages("ggplot2")
+library(ggplot2)
+library(ggExtra)
+
+#social 2010
+DATA[is.na(DATA)] <- 0
+DATA2010 <-DATA
+DATA2010 <- DATA2010[ which(DATA2010$year==2010), ]
+DATA2010[] <- lapply(DATA2010, function(x) as.numeric(as.character(x)))
+DATA2010$lnscore <- log1p(DATA2010$score)
+
+civsoc10 <- DATA2010[DATA2010$lnsocial & DATA2010$lnsubscription , ]
+g <- ggplot(DATA2010, aes(lnsubscription, lnsocial)) + 
+  geom_count() + 
+  geom_smooth(method="lm", se=F)+ 
+  labs(subtitle="Facebook users Vs civil society conflict events", 
+       y="Civil soc conflict", 
+       x="Facebook", 
+       title="Scatterplot", 
+       caption = "Source: ACLED, UNDP")
+g <-ggMarginal(g, type = "histogram", fill="transparent")
+
+g
+
+gg <- ggplot(DATA2010, aes(x=lnsubscription, y=lnsocial)) + 
+  geom_point(aes(size=lnscore)) + 
+  geom_smooth(method="loess", se=F) + 
+  labs(subtitle="Facebook users Vs civil society conflict events", 
+       y="Civil soc conflict", 
+       x="Facebook", 
+       title="Scatterplot", 
+       caption = "Source: ACLED, UNDP")
+plot(gg)
+
+gg
+
+reg10soc = lm(social.conflict ~ subscription + score, data= DATA2010)
+coeftest(reg10soc, vcov = vcovHC(reg10soc, "HC1"))
+
+
+
+
+
+####################################################
+
+DATA1 <- DATA1[!(DATA1$iso3c %in% c("SSD", "MDG", "MLI", "MAR", "LSO")),]
+
+table(DATA1$iso3c, DATA1$year)
+
+
+
+fixed <- plm(lnsocial ~ lnsubscription, data=DATA1, index=c("iso3c", "year"), model="within")
+
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
 #
