@@ -100,9 +100,10 @@ DATA$iso3c <- countrycode(DATA$country, 'country.name',
 
 #Dependent variables natural log 
 DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
-DATA$lnmilitary <- log(DATA$military.conflict)
+DATA$lnmilitary <- log1p(DATA$military.conflict)
 DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
-DATA$lnsocial <- log(DATA$social.conflict)
+DATA$lnsocial <- log1p(DATA$social.conflict)
+#
 
 ```
 
