@@ -5,6 +5,8 @@ date: "11/24/2017"
 output: pdf_document
 ---
 
+rm(list = ls())
+
 ```{r setup, include=FALSE, echo=FALSE}
 library(knitr)
 opts_chunk$set(message = FALSE, error = TRUE, fig.pos = 'H', tidy.opts=list(width.cutoff=65), tidy=TRUE, fig.path='figs/', cache.path='cache/graphics-', 
@@ -65,20 +67,24 @@ library(countrycode)
 
 ACLED <- read_csv("~/Armed-Conflict-Location-Event-Data/ACLED-Version-7-All-Africa-1997-2016_csv_dyadic-file.csv")
 ACLED <- subset(ACLED, select = c("YEAR","EVENT_TYPE", "COUNTRY"))
-names(ACLED)[names(ACLED) == 'COUNTRY'] <- 'Country'
+names(ACLED)[names(ACLED) == 'COUNTRY'] <- "country"
 names(ACLED)[names(ACLED) == 'YEAR'] <- 'year'
-ACLED <- ACLED %>% dplyr::group_by(year, Country, EVENT_TYPE) %>% dplyr::summarize(count = n())
+ACLED <- ACLED %>% dplyr::group_by(year, country, EVENT_TYPE) %>% dplyr::summarize(count = n())
+ACLED <- apply(ACLED,2,toupper)
 
-cat_social_conflict <- c("Riots/Protests", "Violence against civilians")
+cat_social_conflict <- c("RIOTS/PROTESTS", "VIOLENCE AGAINST CIVILIANS")
+
+ACLED <- ACLED %>% 
+  as.data.frame()
 ACLED2 <- ACLED %>% 
-  mutate(dep1 = ifelse(EVENT_TYPE %in% cat_social_conflict, "social.conflict", "military.conflict" ))
+  dplyr::mutate(dep1 = ifelse(EVENT_TYPE %in% cat_social_conflict, "CIVILIAN INVOLVED CONFLICT", "ARMED GROUP CONFLICT" ))
+
+ACLED2$count <- as.numeric(ACLED2$count)
 ACLED2 <- ACLED2 %>% 
   ungroup() %>%
-  dplyr::group_by(Country, year, dep1) %>%
+  dplyr::group_by(country, year, dep1) %>%
   dplyr::summarise(dep2 = sum(count)) %>%
   spread(dep1, dep2)
-names(ACLED2)[names(ACLED2)== "Country"] <- "country"
-ACLED2 <- apply(ACLED2,2,toupper)
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
 GDP <- apply(GDP,2,toupper)
@@ -87,18 +93,9 @@ GDP$Country <- recode(GDP$Country,"CONGO"="Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democratic Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
 GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
-names(GDP)[names(GDP)== "score"] <- "GDP"
-names(GDP)[names(GDP)== "Country"] <- "country"
-GDP <- apply(GDP,2,toupper)
-GDP <- as.data.frame(GDP)
-GDP <- GDP %>% gather(key = year, value = score, -country)
-
-DATA <- merge(ACLED2, GDP, by=c("year","country"))
-
-DATA$iso3c <- countrycode(DATA$country, 'country.name', 
-                             'iso3c', warn = T)
 
 #Dependent variables natural log 
+<<<<<<< HEAD
 DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
 DATA$lnmilitary <- log1p(DATA$military.conflict)
 DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
@@ -109,6 +106,12 @@ DATA$subscription <- as.numeric(as.character(DATA$subscription))
 DATA$lnsubscription <- log1p(DATA$subscription)
 
 
+=======
+DATA$`ARMED GROUP CONFLICT` <- DATA$`ARMED GROUP CONFLICT` %>% 
+  as.numeric()
+DATA$`CIVILIAN INVOLVED CONFLICT`<- DATA$`CIVILIAN INVOLVED CONFLICT` %>% 
+  as.numeric()
+>>>>>>> 8e57631f36d23b09171111a66a6169fa4a22e605
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
