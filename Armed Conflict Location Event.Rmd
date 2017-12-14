@@ -103,7 +103,11 @@ DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
 DATA$lnmilitary <- log1p(DATA$military.conflict)
 DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
 DATA$lnsocial <- log1p(DATA$social.conflict)
-#
+
+#subscription
+DATA$subscription <- as.numeric(as.character(DATA$subscription))
+DATA$lnsubscription <- log1p(DATA$subscription)
+
 
 ```
 
@@ -258,7 +262,7 @@ m2016$year="2016"
 facebook <- rbind(m2010, m2011, m2012, m2013, m2014, m2015, m2016) 
 facebook$data <- str_replace_all(facebook$data, ",", "")
 facebook$subscription <- stri_extract_first_regex(facebook$data, "[0-9]+")
-facebook$penetration <- str_extract(facebook$data, "((\\d\\.\\d+)\\%)")
+facebook$penetration <- str_extract(facebook$data, "((\\dd\\.\\d+)\\%)")
 facebook$penetration <- str_replace_all(facebook$penetration, "%", "")
 facebook$data <- NULL
 
