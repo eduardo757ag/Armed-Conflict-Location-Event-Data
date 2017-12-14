@@ -85,6 +85,7 @@ ACLED2 <- ACLED2 %>%
   dplyr::group_by(country, year, dep1) %>%
   dplyr::summarise(dep2 = sum(count)) %>%
   spread(dep1, dep2)
+ACLED2$iso3c <- countrycode(ACLED2$country, 'country.name','iso3c', warn = T)
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
 GDP <- apply(GDP,2,toupper)
@@ -97,8 +98,9 @@ GDP <- as.data.frame(GDP)
 names(GDP)[names(GDP)== "Country"] <- "country"
 names(GDP)[names(GDP)== "score"] <- "GDP"
 GDP <- GDP %>% gather(key = year, value = GDP, -country)
-DATA <- merge(ACLED2, GDP, by=c("year","country"))
-DATA$iso3c <- countrycode(DATA$country, 'country.name','iso3c', warn = T)
+GDP$iso3c <- countrycode(GDP$country, 'country.name','iso3c', warn = T)
+  
+DATA <- merge(ACLED2, GDP, by=c("year","iso3c"))
 
 #Dependent variables natural log 
 DATA$`ARMED GROUP CONFLICT` <- DATA$`ARMED GROUP CONFLICT` %>% as.numeric()
@@ -269,7 +271,13 @@ facebook$iso3c <- countrycode(facebook$country, 'country.name',
 facebook<-data.frame(facebook)
 
 DATA <- merge(DATA, facebook, by=c("year","iso3c"))
-DATA <- subset(DATA, select = -c(country.y))
+DATA <- subset(DATA, select = -c(country.y, country))
+
+#log subscription
+DATA$subscription <- as.numeric(as.character(DATA$subscription))
+DATA$lnsubscription <- log1p(DATA$subscription)
+
+names(DATA)[names(DATA)== "country.x"] <- "country"
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
