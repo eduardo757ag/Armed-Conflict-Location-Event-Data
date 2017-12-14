@@ -266,6 +266,8 @@ facebook$country <- recode(facebook$country ,"CONGO"="Republic of Congo")
 facebook$country <- recode(facebook$country ,"CONGO, Democratic Republic of the, (ex-ZAIRE)"="Democratic Republic of Congo")
 facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivory Coast")
 facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
+facebook <- apply(facebook,2,toupper)
+facebook <- as.data.frame(facebook)
 
 DATA <- merge(DATA, facebook, by=c("year","country"))
 ```
