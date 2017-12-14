@@ -57,6 +57,8 @@ install.packages("stringi", repos = "https://cran.rstudio.com/")
 library(stringi)
 install.packages("plm", repos = "https://cran.rstudio.com/")
 library(plm)
+install.packages("countrycode")
+library(countrycode)
 ```
 
 ```{r data, include=FALSE, echo=FALSE}
@@ -76,30 +78,31 @@ ACLED2 <- ACLED2 %>%
   dplyr::summarise(dep2 = sum(count)) %>%
   spread(dep1, dep2)
 names(ACLED2)[names(ACLED2)== "Country"] <- "country"
+ACLED2 <- apply(ACLED2,2,toupper)
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
-View(GDP)
+GDP <- apply(GDP,2,toupper)
+GDP <- as.data.frame(GDP)
 GDP$Country <- recode(GDP$Country,"CONGO"="Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democratic Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
 GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
-
-GDP <- GDP %>% gather(key = year, value = score, -Country)
 names(GDP)[names(GDP)== "score"] <- "GDP"
 names(GDP)[names(GDP)== "Country"] <- "country"
 GDP <- apply(GDP,2,toupper)
-
-#ACLED2 <- ACLED2 %>% gather(key = year, value = score, -country)
-names(ACLED2)[names(ACLED2)== "score"] <- "GDP"
-names(ACLED2)[names(ACLED2)== "Country"] <- "country"
-ACLED2 <- apply(ACLED2,2,toupper)
+GDP <- as.data.frame(GDP)
+GDP <- GDP %>% gather(key = year, value = score, -country)
 
 DATA <- merge(ACLED2, GDP, by=c("year","country"))
-names(DATA)[names(DATA) == 'Country'] <- 'country'
+
+DATA$iso3c <- countrycode(DATA$country, 'country.name', 
+                             'iso3c', warn = T)
 
 #Dependent variables natural log 
 DATA$military.conflict <- as.numeric(as.character(DATA$military.conflict))
 DATA$lnmilitary <- log(DATA$military.conflict)
+DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
+DATA$lnsocial <- log(DATA$social.conflict)
 
 ```
 
@@ -258,12 +261,23 @@ facebook$penetration <- str_extract(facebook$data, "((\\d\\.\\d+)\\%)")
 facebook$penetration <- str_replace_all(facebook$penetration, "%", "")
 facebook$data <- NULL
 
-facebook$country <- recode(facebook$country ,"CONGO"="Republic of Congo")
-facebook$country <- recode(facebook$country ,"CONGO, Democratic Republic of the, (ex-ZAIRE)"="Democratic Republic of Congo")
-facebook$country  <- recode(facebook$country ,"COTE D'IVOIRE (Ivory Coast)"="Ivory Coast")
-facebook$country <- recode(facebook$country ,"TANZANIA"="Tanzania")
 
-DATA <- merge(DATA, facebook, by=c("year","country"))
+facebook$country <- gsub("EQUATORIAL\nGUINEA","EQUATORIAL GUINEA", facebook$country) 
+facebook$country <-gsub("CENTRAL AFRICAN\n REPUBLIC","CENTRAL AFRICAN REPUBLIC", facebook$country) 
+
+facebook <- data.frame(lapply(facebook, as.character), stringsAsFactors=FALSE)
+facebook$iso3c <- countrycode(facebook$country, 'country.name', 
+                             'iso3c', warn = T)
+facebook<-data.frame(facebook)
+
+#facebook$country <- apply(facebook,2,toupper)
+#facebook$country <- swap(facebook$country ,"CONGO"="Republic of Congo")
+#facebook$country <- dplyr::recode(facebook$country ,"CONGO, Democratic Republic of the, #(ex-ZAIRE)"="Democratic Republic of Congo")
+#facebook$country  <- dplyr::recode(facebook$country ,"COTE D'IVOIRE (IVORY COAST)"="Ivory #Coast")
+#facebook$country <- dplyr::recode(facebook$country ,"TANZANIA"="Tanzania")
+#facebook$country <- apply(facebook,2,toupper)
+
+DATA <- merge(DATA, facebook, by=c("year","iso3c"))
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -321,6 +335,4 @@ fixed <- plm(count ~ penetration, data=DATA, index=c("country", "year"), model="
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
 ```
-
-table(DATA$country, DATA$year)
 
