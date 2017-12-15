@@ -95,6 +95,7 @@ ACLED2 <- ACLED2 %>%
   dplyr::group_by(country, year, dep1) %>%
   dplyr::summarise(dep2 = sum(count)) %>%
   spread(dep1, dep2)
+ACLED2$iso3c <- countrycode(ACLED2$country, 'country.name','iso3c', warn = T)
 
 GDP <- read_excel("~/Armed-Conflict-Location-Event-Data/Statistical model/GDP per capita/GDP.xlsx")
 GDP <- apply(GDP,2,toupper)
@@ -103,7 +104,15 @@ GDP$Country <- recode(GDP$Country,"CONGO"="Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CONGO (DEMOCRATIC REPUBLIC OF THE)"="Democratic Republic of Congo")
 GDP$Country <- recode(GDP$Country,"CÔTE D'IVOIRE"="Ivory Coast")
 GDP$Country <- recode(GDP$Country,"TANZANIA (UNITED REPUBLIC OF)"="Tanzania")
+GDP <- as.data.frame(GDP)
+names(GDP)[names(GDP)== "Country"] <- "country"
+names(GDP)[names(GDP)== "score"] <- "GDP"
+GDP <- GDP %>% gather(key = year, value = GDP, -country)
+GDP$iso3c <- countrycode(GDP$country, 'country.name','iso3c', warn = T)
+  
+DATA <- merge(ACLED2, GDP, by=c("year","iso3c"))
 
+<<<<<<< HEAD
 DATA$iso3c <- countrycode(DATA$country, 'country.name', 
                         'iso3c', warn = T)
 
@@ -113,6 +122,13 @@ DATA$lnmilitary <- log1p(DATA$military.conflict)
 DATA$social.conflict <- as.numeric(as.character(DATA$social.conflict))
 DATA$lnsocial <- log1p(DATA$social.conflict)
 
+=======
+#Dependent variables natural log 
+DATA$`ARMED GROUP CONFLICT` <- DATA$`ARMED GROUP CONFLICT` %>% as.numeric()
+DATA$`CIVILIAN INVOLVED CONFLICT`<- DATA$`CIVILIAN INVOLVED CONFLICT` %>% as.numeric()
+DATA$lnmilitary <- log(DATA$`ARMED GROUP CONFLICT`)
+DATA$lnsocial <- log(DATA$`CIVILIAN INVOLVED CONFLICT`)
+>>>>>>> 198a35e906bde23d96d7c636e462d8836e3beaca
 ```
 
 ```{r facebook data, include=FALSE, echo=FALSE}
@@ -266,23 +282,34 @@ m2016$year="2016"
 facebook <- rbind(m2010, m2011, m2012, m2013, m2014, m2015, m2016) 
 facebook$data <- str_replace_all(facebook$data, ",", "")
 facebook$subscription <- stri_extract_first_regex(facebook$data, "[0-9]+")
+<<<<<<< HEAD
 facebook$penetration <- str_extract(facebook$data, "((\\dd\\.\\d+)\\%)")
+=======
+facebook$penetration <- str_extract(facebook$data, "((\\d+\\.*\\d*)\\%)")
+>>>>>>> 198a35e906bde23d96d7c636e462d8836e3beaca
 facebook$penetration <- str_replace_all(facebook$penetration, "%", "")
 facebook$data <- NULL
-
-
 facebook$country <- gsub("EQUATORIAL\nGUINEA","EQUATORIAL GUINEA", facebook$country) 
 facebook$country <-gsub("CENTRAL AFRICAN\n REPUBLIC","CENTRAL AFRICAN REPUBLIC", facebook$country) 
-
 facebook <- data.frame(lapply(facebook, as.character), stringsAsFactors=FALSE)
 facebook$iso3c <- countrycode(facebook$country, 'country.name', 
                              'iso3c', warn = T)
 facebook<-data.frame(facebook)
 
 DATA <- merge(DATA, facebook, by=c("year","iso3c"))
+<<<<<<< HEAD
 #subscription
 DATA$subscription <- as.numeric(as.character(DATA$subscription))
 DATA$lnsubscription <- log1p(DATA$subscription)
+=======
+DATA <- subset(DATA, select = -c(country.y, country))
+
+#log subscription
+DATA$subscription <- as.numeric(as.character(DATA$subscription))
+DATA$lnsubscription <- log1p(DATA$subscription)
+
+names(DATA)[names(DATA)== "country.x"] <- "country"
+>>>>>>> 198a35e906bde23d96d7c636e462d8836e3beaca
 ```
 
 ```{r interactive plot, include=FALSE, echo=FALSE}
@@ -393,6 +420,19 @@ fixed <- plm(lnsocial ~ lnsubscription, data=DATA1, index=c("iso3c", "year"), mo
 
 summary(fixed)
 #see https://www.princeton.edu/~otorres/Panel101R.pdf
+<<<<<<< HEAD
 #
+=======
+
+ACLED$count <- as.numeric(ACLED$count)
+    g<-ggplot(data=ACLED,aes(x=year, y=count, group=country))
+    g<-g+geom_line() + 
+      geom_point() +
+      ggtitle(paste("Armed Conflicts")) +
+      xlab("Year") + ylab("The number of reported cases")
+    g
+    
+    max(ACLED$count, na.rm = TRUE)
+>>>>>>> 198a35e906bde23d96d7c636e462d8836e3beaca
 ```
 
